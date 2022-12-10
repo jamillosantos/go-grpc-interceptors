@@ -79,8 +79,8 @@ func UnaryInterceptor(options ...Option) grpc.UnaryServerInterceptor {
 				ctx = c
 			}
 		}
-		method := info.FullMethod[strings.LastIndexByte(info.FullMethod, '.')+1:]
-		commonFields := buildCommonFields(method, info)
+		service, method := extractServiceAndMethod(info.FullMethod)
+		commonFields := buildCommonFields(service, method, info)
 
 		ctx = logRequest(ctx, method, commonFields, reqObj, opts)
 		resp, err = handler(ctx, req)
@@ -92,6 +92,14 @@ func UnaryInterceptor(options ...Option) grpc.UnaryServerInterceptor {
 		logResponse(ctx, method, commonFields, reqObj, respObj, err, opts)
 		return
 	}
+}
+
+func extractServiceAndMethod(fullMethod string) (string, string) {
+	toks := strings.Split(fullMethod[strings.LastIndexByte(fullMethod, '.')+1:], "/")
+	if len(toks) == 2 {
+		return toks[0], toks[1]
+	}
+	return "", ""
 }
 
 func logRequest(ctx context.Context, method string, fields []zap.Field, reqObj zapcore.ObjectMarshaler, opts loggingOptions) context.Context {
@@ -137,9 +145,9 @@ func logResponse(ctx context.Context, method string, fields []zap.Field, reqObj 
 	logctx.Info(ctx, fmt.Sprintf(opts.responseMessage, method), fields...)
 }
 
-func buildCommonFields(method string, info *grpc.UnaryServerInfo) []zap.Field {
+func buildCommonFields(service string, method string, info *grpc.UnaryServerInfo) []zap.Field {
 	f := make([]zap.Field, 0, 4)
-	f = append(f, zap.String(fieldGRPCService, info.FullMethod)) // TODO Extract service name
+	f = append(f, zap.String(fieldGRPCService, service)) // TODO Extract service name
 	f = append(f, zap.String(fieldGRPCMethod, method))
 	return append(f, zap.String(fieldGRPCFullMethod, info.FullMethod))
 }
