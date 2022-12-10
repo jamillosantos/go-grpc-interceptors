@@ -101,12 +101,13 @@ func TestInterceptor(t *testing.T) {
 			require.Len(t, entries, 1)
 
 			assert.Contains(t, " completed", entries[0].Message)
-			assert.Len(t, entries[0].Context, 5)
+			assert.Len(t, entries[0].Context, 6)
 			assert.Equal(t, entries[0].Context[0].Key, fieldGRPCService)
 			assert.Equal(t, entries[0].Context[1].Key, fieldGRPCMethod)
 			assert.Equal(t, entries[0].Context[2].Key, fieldGRPCFullMethod)
 			assert.Equal(t, entries[0].Context[3].Key, fieldGRPCStatus)
 			assert.Equal(t, entries[0].Context[4].Key, fieldGRPCStatusCode)
+			assert.Equal(t, entries[0].Context[5].Key, "error")
 		})
 	})
 }
