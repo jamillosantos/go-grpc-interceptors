@@ -20,13 +20,15 @@ func (s contextAddFieldUpdater) String() string {
 }
 
 const (
-	fieldGRPCService    = "grpc.service"
-	fieldGRPCMethod     = "grpc.method"
-	fieldGRPCFullMethod = "grpc.full_method"
-	fieldGRPCStatus     = "grpc.status"
-	fieldGRPCStatusCode = "grpc.status_code"
-	fieldGRPCRequest    = "grpc.request"
-	fieldGRPCResponse   = "grpc.response"
+	fieldGRPCService      = "grpc.service"
+	fieldGRPCMethod       = "grpc.method"
+	fieldGRPCFullMethod   = "grpc.full_method"
+	fieldGRPCStatus       = "grpc.status"
+	fieldGRPCStatusCode   = "grpc.status_code"
+	fieldGRPCRequest      = "grpc.request"
+	fieldGRPCResponse     = "grpc.response"
+	fieldGRPCErrorMessage = "grpc.error.message"
+	fieldGRPCErrorDetails = "grpc.error.details"
 )
 
 const (
@@ -50,7 +52,7 @@ func defaultOptions() loggingOptions {
 	return loggingOptions{
 		extractRequest:  nil,
 		extractResponse: nil,
-		handleError:     nil,
+		handleError:     defaultHandleError,
 		logRequest:      false,
 		requestMessage:  messageRequest,
 		logResponse:     true,
