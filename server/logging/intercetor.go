@@ -32,31 +32,34 @@ const (
 )
 
 const (
-	messageRequest  = "%s started"
-	messageResponse = "%s completed"
+	messageRequest       = "%s started"
+	messageResponse      = "%s completed"
+	messageResponseError = "%s completed with error"
 )
 
 type loggingOptions struct {
-	extractRequest  func(ctx context.Context, req interface{}) (context.Context, zapcore.ObjectMarshaler, error)
-	extractResponse func(ctx context.Context, resp interface{}) zapcore.ObjectMarshaler
-	handleError     func(ctx context.Context, err error) []zap.Field
-	logRequest      bool
-	requestMessage  string
-	logResponse     bool
-	responseMessage string
+	extractRequest       func(ctx context.Context, req interface{}) (context.Context, zapcore.ObjectMarshaler, error)
+	extractResponse      func(ctx context.Context, resp interface{}) zapcore.ObjectMarshaler
+	handleError          func(ctx context.Context, err error) []zap.Field
+	logRequest           bool
+	requestMessage       string
+	logResponse          bool
+	responseMessage      string
+	responseErrorMessage string
 }
 
 type Option func(*loggingOptions)
 
 func defaultOptions() loggingOptions {
 	return loggingOptions{
-		extractRequest:  nil,
-		extractResponse: nil,
-		handleError:     defaultHandleError,
-		logRequest:      false,
-		requestMessage:  messageRequest,
-		logResponse:     true,
-		responseMessage: messageResponse,
+		extractRequest:       nil,
+		extractResponse:      nil,
+		handleError:          defaultHandleError,
+		logRequest:           false,
+		requestMessage:       messageRequest,
+		logResponse:          true,
+		responseMessage:      messageResponse,
+		responseErrorMessage: messageResponseError,
 	}
 }
 
@@ -120,14 +123,14 @@ func logResponse(ctx context.Context, method string, fields []zap.Field, reqObj 
 		return
 	}
 
-	st := codes.OK
+	stCode := codes.OK
 	if s, ok := status.FromError(err); ok {
-		st = s.Code()
+		stCode = s.Code()
 	}
 	fields = append(
 		fields,
-		zap.String(fieldGRPCStatus, st.String()),
-		zap.Uint32(fieldGRPCStatusCode, uint32(st)),
+		zap.String(fieldGRPCStatus, stCode.String()),
+		zap.Uint32(fieldGRPCStatusCode, uint32(stCode)),
 	)
 
 	if !opts.logRequest && reqObj != nil {
@@ -138,11 +141,18 @@ func logResponse(ctx context.Context, method string, fields []zap.Field, reqObj 
 		fields = append(fields, zap.Object(fieldGRPCResponse, respObj))
 	}
 
-	if err != nil && opts.handleError != nil {
-		fields = append(fields, opts.handleError(ctx, err)...)
+	writeLog := logctx.Info
+	logMessage := opts.responseMessage
+
+	if err != nil {
+		writeLog = logctx.Error
+		logMessage = opts.responseErrorMessage
+		if opts.handleError != nil {
+			fields = append(fields, opts.handleError(ctx, err)...)
+		}
 	}
 
-	logctx.Info(ctx, fmt.Sprintf(opts.responseMessage, method), fields...)
+	writeLog(ctx, fmt.Sprintf(logMessage, method), fields...)
 }
 
 func buildCommonFields(service string, method string, info *grpc.UnaryServerInfo) []zap.Field {
