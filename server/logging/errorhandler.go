@@ -17,7 +17,7 @@ func defaultHandleError(_ context.Context, err error) []zap.Field {
 	}
 	fields := []zap.Field{zap.Error(err)}
 	if st, ok := status.FromError(err); ok {
-		fields = append(fields, zap.String(fieldGRPCStatus, st.Message()))
+		fields = append(fields, zap.String(fieldGRPCErrorMessage, st.Message()))
 		details := st.Details()
 		if len(details) > 0 {
 			fields = append(fields, zap.Array(fieldGRPCErrorDetails, &errorDetailsObjectMarshaler{details}))
